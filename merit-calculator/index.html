@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Merit Calculator — Pakistani Universities</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif}
+body{background:#0f172a;color:#e2e8f0;min-height:100vh;padding:20px}
+.wrap{max-width:520px;margin:0 auto}
+h1{text-align:center;color:#22c55e;margin-bottom:4px;font-size:24px}
+.sub{text-align:center;color:#94a3b8;font-size:13px;margin-bottom:20px}
+.card{background:#1e293b;border-radius:14px;padding:18px;margin-bottom:14px;border:1px solid #334155}
+label{display:block;font-size:13px;color:#94a3b8;margin:10px 0 4px}
+input,select{width:100%;padding:11px;border-radius:9px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:15px}
+input:focus,select:focus{outline:none;border-color:#22c55e}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{width:100%;padding:14px;border:none;border-radius:10px;background:#22c55e;color:#052e16;font-weight:700;font-size:16px;cursor:pointer;margin-top:14px}
+button:hover{background:#16a34a}
+#result{display:none;text-align:center;padding:22px}
+#result .pct{font-size:52px;font-weight:800;color:#22c55e}
+#result .uni{font-size:15px;color:#94a3b8;margin-top:6px}
+.note{font-size:12px;color:#64748b;text-align:center;margin-top:14px;line-height:1.6}
+.trial{background:#1e293b;border:1px dashed #f59e0b;border-radius:10px;padding:12px;text-align:center;font-size:13px;color:#fbbf24;margin-bottom:14px}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+<div class="wrap">
+<h1>🎓 Merit Calculator</h1>
+<p class="sub">Pakistani Universities — Aggregate Calculator</p>
+<div class="trial" id="trialBox">Free trial: <b id="trialLeft">3</b> calculations left</div>
+
+<div class="card">
+<label>Select University</label>
+<select id="uni" onchange="setFormula()">
+<option value="nust">NUST (75% FSc + 25% NET)</option>
+<option value="fast">FAST (50% FSc + 50% Entry Test)</option>
+<option value="uet">UET Lahore (70% FSc + 30% ECAT)</option>
+<option value="giki">GIKI (85% FSc + 15% Test)</option>
+<option value="comsats">COMSATS (70% FSc + 30% NTS)</option>
+<option value="punjab">PU / General (70% FSc + 30% Test)</option>
+<option value="custom">Custom Formula</option>
+</select>
+
+<div id="customW" style="display:none">
+<div class="row">
+<div><label>Academic Weight %</label><input type="number" id="wA" value="70" min="0" max="100"></div>
+<div><label>Test Weight %</label><input type="number" id="wT" value="30" min="0" max="100"></div>
+</div>
+</div>
+
+<label>Matric / O-Level Marks Obtained</label>
+<input type="number" id="mObt" placeholder="e.g. 950">
+<label>Matric / O-Level Total Marks</label>
+<input type="number" id="mTot" placeholder="e.g. 1100" value="1100">
+
+<label>FSc / A-Level Marks Obtained</label>
+<input type="number" id="fObt" placeholder="e.g. 980">
+<label>FSc / A-Level Total Marks</label>
+<input type="number" id="fTot" placeholder="e.g. 1100" value="1100">
+
+<label>Entry Test Marks Obtained</label>
+<input type="number" id="tObt" placeholder="e.g. 280">
+<label>Entry Test Total Marks</label>
+<input type="number" id="tTot" placeholder="e.g. 400" value="400">
+
+<button onclick="calc()">Calculate Merit</button>
+</div>
+
+<div class="card" id="result">
+<div class="pct" id="pctOut">0%</div>
+<div class="uni" id="uniOut"></div>
+</div>
+
+<p class="note">Formulas based on publicly known university merit criteria.<br>Always verify with the university's official admission office.<br><br>Made for Pakistani students 🇵🇰</p>
+</div>
+
+<script>
+let trials = parseInt(localStorage.getItem('mc_trials') || '3');
+const FORMULAS = {nust:[0,75,25], fast:[0,50,50], uet:[0,70,30], giki:[0,85,15], comsats:[0,70,30], punjab:[0,70,30]};
+function setFormula(){ document.getElementById('customW').style.display = document.getElementById('uni').value==='custom' ? 'block':'none'; }
+function updTrial(){ document.getElementById('trialLeft').textContent = trials;
+ if(trials<=0){ document.getElementById('trialBox').innerHTML='Free trials over. <b>Rs. 99</b> for unlimited access — <a href="https://paypal.me/mjsaq279" style="color:#22c55e">Pay here</a>'; } }
+function calc(){
+ if(trials<=0){ alert('Free trials finished! Pay Rs. 99 for unlimited access.'); return; }
+ const mO=+document.getElementById('mObt').value, mT=+document.getElementById('mTot').value||1100;
+ const fO=+document.getElementById('fObt').value, fT=+document.getElementById('fTot').value||1100;
+ const tO=+document.getElementById('tObt').value, tT=+document.getElementById('tTot').value||400;
+ if(!fO||!tO){ alert('Please enter FSc and Test marks'); return; }
+ const uni=document.getElementById('uni').value;
+ let wA,wT;
+ if(uni==='custom'){ wA=+document.getElementById('wA').value; wT=+document.getElementById('wT').value; }
+ else { [ , wA, wT] = FORMULAS[uni]; }
+ const fPct=(fO/fT)*100, tPct=(tO/tT)*100;
+ const merit=((fPct*wA)+(tPct*wT))/100;
+ trials--; localStorage.setItem('mc_trials', trials); updTrial();
+ document.getElementById('result').style.display='block';
+ document.getElementById('pctOut').textContent=merit.toFixed(2)+'%';
+ document.getElementById('uniOut').textContent=document.getElementById('uni').selectedOptions[0].text;
+ document.getElementById('result').scrollIntoView({behavior:'smooth'});
+}
+updTrial(); setFormula();
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}</script>
+</body>
+</html>
