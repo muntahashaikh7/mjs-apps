@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scam SMS Checker — Pakistan</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif}
+body{background:#0f172a;color:#e2e8f0;min-height:100vh;padding:20px}
+.wrap{max-width:520px;margin:0 auto}
+h1{text-align:center;color:#ef4444;margin-bottom:4px;font-size:24px}
+.sub{text-align:center;color:#94a3b8;font-size:13px;margin-bottom:20px}
+.card{background:#1e293b;border-radius:14px;padding:18px;margin-bottom:14px;border:1px solid #334155}
+label{display:block;font-size:13px;color:#94a3b8;margin-bottom:6px}
+textarea{width:100%;min-height:130px;padding:12px;border-radius:9px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:14px;resize:vertical}
+textarea:focus{outline:none;border-color:#ef4444}
+button{width:100%;padding:14px;border:none;border-radius:10px;background:#ef4444;color:#fff;font-weight:700;font-size:16px;cursor:pointer;margin-top:12px}
+button:hover{background:#dc2626}
+#result{display:none;margin-top:4px}
+.safe{border-color:#22c55e!important}.safe h2{color:#22c55e}
+.danger{border-color:#ef4444!important}.danger h2{color:#ef4444}
+.warn{border-color:#f59e0b!important}.warn h2{color:#f59e0b}
+#result h2{font-size:20px;margin-bottom:10px}
+.flag{background:#0f172a;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:13px;line-height:1.5}
+.flag b{color:#fbbf24}
+.tip{font-size:12px;color:#94a3b8;margin-top:10px;line-height:1.7}
+.trial{background:#1e293b;border:1px dashed #f59e0b;border-radius:10px;padding:12px;text-align:center;font-size:13px;color:#fbbf24;margin-bottom:14px}
+.ur{font-size:13px;color:#cbd5e1;background:#0f172a;border-radius:8px;padding:10px 12px;margin-top:10px;line-height:1.7}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+<div class="wrap">
+<h1>🛡️ Scam SMS Checker</h1>
+<p class="sub">Fake BISP / Prize / Bank messages ki pehchan</p>
+<div class="trial" id="trialBox">Free trial: <b id="trialLeft">4</b> checks left</div>
+<div class="card">
+<label>Paste the SMS message here:</label>
+<textarea id="sms" placeholder="e.g. Mubarak ho! BISP ki taraf se Rs 25,000 ka inaam nikla hai. Raabta karein 0341-XXXXXXX"></textarea>
+<button onclick="check()">Check for Scam</button>
+</div>
+<div class="card" id="result"><h2 id="verdict"></h2><div id="flags"></div><div class="ur" id="urduOut"></div><p class="tip" id="tipOut"></p></div>
+<p class="tip" style="text-align:center">⚠️ Ye tool basic red-flags check karta hai, 100% guarantee nahi.<br>Shak ho to kabhi paise ya OTP share na karein.</p>
+</div>
+<script>
+let trials=parseInt(localStorage.getItem('ssc_trials')||'4');
+function updTrial(){document.getElementById('trialLeft').textContent=trials;
+if(trials<=0){document.getElementById('trialBox').innerHTML='Free trials over. <b>Rs. 99</b> unlimited — <a href="https://paypal.me/mjsaq279" style="color:#22c55e">Pay here</a>';}}
+const RULES=[
+ {re:/bisp.*(8171|8\s*1\s*7\s*1)/i,ok:true,msg:"BISP messages ONLY come from 8171"},
+ {re:/bisp/i,flag:"Mentions BISP",why:"Real BISP SMS only come from <b>8171</b>. Any other number = scam."},
+ {re:/25,?000|25000/i,flag:"Prize amount mentioned",why:"'Rs 25,000 inaam' is the #1 BISP scam template in Pakistan."},
+ {re:/mubarak|congrat|jeet|winner|inaam/i,flag:"Prize/lottery language",why:"Government programs NEVER announce prizes via random SMS."},
+ {re:/03\d{2}[\s-]?\d{7}/,flag:"Mobile number in message",why:"Official SMS never asks you to call a personal mobile number."},
+ {re:/otp|password|pin|account number|cnic.*(send|bhej)/i,flag:"Asks for OTP/password/CNIC",why:"NEVER share OTP, PIN or bank details — banks never ask via SMS."},
+ {re:/link|click|http/i,flag:"Contains a link",why:"Scam links steal your data. Official sites: check the URL carefully."},
+ {re:/urgent|immediately|abhi|foran|last date/i,flag:"Urgency pressure",why:"Scammers rush you so you don't think. Real notices give proper time."},
+ {re:/easypaisa|jazzcash.*(send|transfer|bhej)/i,flag:"Asks for money transfer",why:"No real program asks you to SEND money to GET money."},
+ {re:/8171/,flag:"Claims 8171 sender",why:"Check your phone — did it ACTUALLY come from 8171? Scammers fake this in text."}
+];
+function check(){
+ if(trials<=0){alert('Free trials finished!');return;}
+ const t=document.getElementById('sms').value.trim();
+ if(!t){alert('Pehle SMS paste karein');return;}
+ trials--;localStorage.setItem('ssc_trials',trials);updTrial();
+ let flags=[],score=0,has8171ok=false;
+ for(const r of RULES){
+  if(r.ok&&r.re.test(t)){has8171ok=true;continue;}
+  if(!r.ok&&r.re.test(t)){flags.push(r);score+=r.flag.includes('OTP')?3:2;}
+ }
+ const box=document.getElementById('result'),v=document.getElementById('verdict');
+ box.className='card';box.style.display='block';
+ let urdu='';
+ if(score>=5){box.classList.add('danger');v.textContent='🚨 SCAM — Hoshiyar!';urdu='Ye message <b>scam</b> lagta hai. Koi paise mat bhejein, koi link mat kholein, number par call mat karein. Message delete kar dein.';}
+ else if(score>=2){box.classList.add('warn');v.textContent='⚠️ Mashkook — Ehtiyat karein';urdu='Is message me <b>khatre ki nishaniyan</b> hain. Official number se verify kiye baghair koi action na lein.';}
+ else{box.classList.add('safe');v.textContent='✅ Saaf lagta hai';urdu='Koi wazeh khatra nahi mila — phir bhi hamesha ehtiyat rakhein.';}
+ document.getElementById('flags').innerHTML=flags.map(f=>'<div class="flag">🔴 <b>'+f.flag+'</b><br>'+f.why+'</div>').join('')||'<div class="flag">Koi red flag nahi mila.</div>';
+ document.getElementById('urduOut').innerHTML='🇵🇰 '+urdu;
+ document.getElementById('tipOut').innerHTML='💡 <b>Yaad rakhein:</b> BISP sirf <b>8171</b> se SMS bhejta hai. Koi bhi "inaam" jo paise maange = 100% fraud.';
+ box.scrollIntoView({behavior:'smooth'});
+}
+updTrial();
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}</script>
+</body>
+</html>
