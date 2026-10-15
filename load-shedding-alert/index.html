@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Load-Shedding Alert — Pakistan</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif}
+body{background:#0f172a;color:#e2e8f0;min-height:100vh;padding:20px}
+.wrap{max-width:520px;margin:0 auto}
+h1{text-align:center;color:#fbbf24;margin-bottom:4px;font-size:24px}
+.sub{text-align:center;color:#94a3b8;font-size:13px;margin-bottom:20px}
+.card{background:#1e293b;border-radius:14px;padding:18px;margin-bottom:14px;border:1px solid #334155}
+label{display:block;font-size:13px;color:#94a3b8;margin-bottom:6px}
+input[type=text],input[type=time]{width:100%;padding:12px;border-radius:9px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:15px;margin-bottom:10px}
+input:focus{outline:none;border-color:#fbbf24}
+button{width:100%;padding:14px;border:none;border-radius:10px;background:#f59e0b;color:#0f172a;font-weight:700;font-size:16px;cursor:pointer;margin-top:6px}
+button:hover{background:#d97706}
+button.ghost{background:#334155;color:#e2e8f0;font-size:14px;padding:10px}
+.status{text-align:center;padding:22px 12px}
+.status .big{font-size:26px;font-weight:800;margin-bottom:6px}
+.status .cd{font-size:15px;color:#94a3b8}
+.on .big{color:#22c55e}.off .big{color:#ef4444}
+.slot{display:flex;align-items:center;justify-content:space-between;background:#0f172a;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:14px}
+.slot .t{font-weight:700;color:#fbbf24}
+.slot button{width:auto;padding:6px 12px;font-size:12px;margin:0;background:#7f1d1d;color:#fff}
+.row{display:flex;gap:8px}
+.row>div{flex:1}
+.trial{background:#1e293b;border:1px dashed #f59e0b;border-radius:10px;padding:12px;text-align:center;font-size:13px;color:#fbbf24;margin-bottom:14px}
+.tip{font-size:12px;color:#94a3b8;margin-top:10px;line-height:1.7;text-align:center}
+.hide{display:none}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+<div class="wrap">
+<h1>⚡ Load-Shedding Alert</h1>
+<p class="sub">Bijli kab jayegi, kab aayegi — exact countdown</p>
+<div class="trial" id="trialBox">Free trial: <b id="trialLeft">4</b> schedule saves left</div>
+
+<div class="card" id="setupCard">
+<label>Apna ilaqa / area likhein:</label>
+<input type="text" id="area" placeholder="e.g. Azizabad, Karachi">
+<div class="row">
+<div><label>Cut start:</label><input type="time" id="tStart"></div>
+<div><label>Cut end:</label><input type="time" id="tEnd"></div>
+</div>
+<button onclick="addSlot()">+ Aaj ka cut add karein</button>
+<button class="ghost" onclick="saveSchedule()">💾 Schedule save karein</button>
+</div>
+
+<div class="card status hide" id="statusCard">
+<div class="big" id="statusBig">—</div>
+<div class="cd" id="statusCd">—</div>
+<div id="slotList"></div>
+<button class="ghost" style="margin-top:10px" onclick="enableNotify()">🔔 15 min pehle alert chahiye? Tap karein</button>
+<button class="ghost" onclick="resetAll()">Naya schedule banayein</button>
+</div>
+
+<p class="tip">⚠️ Schedule apne DISCO ki site ya Roshan Pakistan app se verify karke daalein — ye tool sirf <b>reminder</b> hai, official schedule nahi.<br>⏰ Time aapke phone ke local time par chalta hai.</p>
+<p class="tip">MJS Design Lab</p>
+</div>
+<script>
+let trials=parseInt(localStorage.getItem('lsa_trials')||'4');
+let sched=JSON.parse(localStorage.getItem('lsa_sched')||'null');
+function updTrial(){document.getElementById('trialLeft').textContent=trials;
+if(trials<=0){document.getElementById('trialBox').innerHTML='Free trials over. <b>Rs. 299/year</b> unlimited — <a href="https://paypal.me/mjsaq279" style="color:#22c55e">Pay here</a> phir WhatsApp par screenshot bhejein: <a href="https://wa.me/923209209652" style="color:#22c55e">0320 9209652</a>';}}
+let slots=(sched&&sched.slots)||[];
+function fmt(t){let[h,m]=t.split(':').map(Number);let ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+String(m).padStart(2,'0')+' '+ap;}
+function addSlot(){
+ const s=document.getElementById('tStart').value,e=document.getElementById('tEnd').value;
+ if(!s||!e){alert('Start aur end time dono chunein');return;}
+ if(s>=e){alert('End time start se baad hona chahiye');return;}
+ slots.push({s,e});slots.sort((a,b)=>a.s<b.s?-1:1);renderSlots();
+ document.getElementById('tStart').value='';document.getElementById('tEnd').value='';
+}
+function delSlot(i){slots.splice(i,1);renderSlots();}
+function renderSlots(){
+ document.getElementById('slotList').innerHTML=slots.map((x,i)=>'<div class="slot"><span>🔴 <span class="t">'+fmt(x.s)+' – '+fmt(x.e)+'</span> cut</span><button onclick="delSlot('+i+')">Delete</button></div>').join('')||'<div class="slot">Koi cut add nahi hua</div>';
+}
+function saveSchedule(){
+ const area=document.getElementById('area').value.trim();
+ if(!area){alert('Ilaqa likhein');return;}
+ if(!slots.length){alert('Kam az kam ek cut add karein');return;}
+ if(trials<=0){alert('Free trials khatam!');return;}
+ trials--;localStorage.setItem('lsa_trials',trials);
+ sched={area,slots,date:new Date().toDateString()};
+ localStorage.setItem('lsa_sched',JSON.stringify(sched));
+ updTrial();showStatus();
+}
+function showStatus(){
+ document.getElementById('setupCard').classList.add('hide');
+ document.getElementById('statusCard').classList.remove('hide');
+ renderSlots();tick();setInterval(tick,1000);
+}
+function tick(){
+ if(!sched)return;
+ const now=new Date(),cur=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+ const curS=now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
+ let inCut=null,next=null;
+ for(const x of sched.slots){
+  const ss=x.s.split(':').map(Number),es=x.e.split(':').map(Number);
+  const sS=ss[0]*3600+ss[1]*60,eS=es[0]*3600+es[1]*60;
+  if(curS>=sS&&curS<eS){inCut={x,eS};}
+  else if(sS>curS&&!next){next={x,sS};}
+ }
+ const big=document.getElementById('statusBig'),cd=document.getElementById('statusCd'),card=document.getElementById('statusCard');
+ card.classList.remove('on','off');
+ function hms(sec){sec=Math.max(0,sec);const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return (h?h+'h ':'')+m+'m '+s+'s';}
+ if(inCut){card.classList.add('off');big.textContent='🔴 BIJLI GAYI HAI';cd.textContent=sched.area+' — wapas '+hms(inCut.eS-curS)+' me aayegi ('+fmt(inCut.x.e)+')';}
+ else if(next){card.classList.add('on');big.textContent='⚡ BIJLI HAI';cd.textContent=sched.area+' — '+hms(next.sS-curS)+' me jayegi ('+fmt(next.x.s)+' – '+fmt(next.x.e)+')';}
+ else{card.classList.add('on');big.textContent='⚡ BIJLI HAI';cd.textContent=sched.area+' — aaj ke saare cuts khatam 🎉';}
+ // 15-min alert
+ if(window._alertAt&&curS>=window._alertAt&&!window._alerted&&'Notification' in window&&Notification.permission==='granted'){
+  window._alerted=true;new Notification('⚡ Bijli jaane wali hai!',{body:sched.area+': 15 min me cut ('+fmt(window._alertSlot.s)+' – '+fmt(window._alertSlot.e)+')'});
+ }
+}
+function enableNotify(){
+ if(!('Notification' in window)){alert('Is browser me notifications supported nahi');return;}
+ Notification.requestPermission().then(p=>{
+  if(p!=='granted'){alert('Permission nahi mili');return;}
+  const now=new Date(),curS=now.getHours()*3600+now.getMinutes()*60;
+  for(const x of sched.slots){
+   const ss=x.s.split(':').map(Number),sS=ss[0]*3600+ss[1]*60;
+   if(sS-900>curS){window._alertAt=sS-900;window._alertSlot=x;window._alerted=false;alert('Alert set! '+fmt(x.s)+' se 15 min pehle khabar milegi');return;}
+  }
+  alert('Aaj ka koi cut 15+ min door nahi');
+ });
+}
+function resetAll(){localStorage.removeItem('lsa_sched');sched=null;slots=[];location.reload();}
+updTrial();renderSlots();
+if(sched&&sched.date===new Date().toDateString()){document.getElementById('area').value=sched.area;showStatus();}
+else if(sched){localStorage.removeItem('lsa_sched');sched=null;slots=[];}
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}</script>
+</body>
+</html>
